@@ -1,0 +1,33 @@
+name: govulncheck
+
+on:
+  schedule:
+    - cron: "0 0 * * Sun"
+  pull_request:
+    branches: ["*"]
+    paths: ["**/*.go", "go.*"]
+  push:
+    branches: ["*"]
+    tags-ignore: ["v*"]
+    paths: ["**/*.go", "go.*"]
+  workflow_dispatch:
+
+jobs:
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Install govulncheck
+        shell: bash
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        shell: bash
+        run: govulncheck ./...

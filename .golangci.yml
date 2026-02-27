@@ -1,0 +1,69 @@
+version: "2"
+linters:
+  default: all
+  disable:
+    - cyclop
+    - depguard
+    - dupl
+    - embeddedstructfieldcheck
+    - err113
+    - errorlint
+    - exhaustive
+    - exhaustruct
+    - forbidigo
+    - forcetypeassert
+    - funcorder
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocyclo
+    - godot
+    - gosmopolitan
+    - ireturn
+    - lll
+    - maintidx
+    - makezero
+    - misspell
+    - mnd
+    - nakedret
+    - nestif
+    - nlreturn
+    - noctx
+    - noinlineerr
+    - nonamedreturns
+    - paralleltest
+    - prealloc
+    - predeclared
+    - recvcheck
+    - revive
+    - tagalign
+    - tagliatelle
+    - testpackage
+    - unparam
+    - varnamelen
+    - wastedassign
+    - wsl
+    - wsl_v5
+    - godoclint # ?
+    - wrapcheck # ?
+  settings:
+    gosec:
+      excludes:
+        - G103 # Audit the use of unsafe block
+        - G104 # Audit errors not checked
+        - G107 # URL provided to HTTP request as taint input
+        - G117 # Potential exposure of secrets via JSON/YAML/XML/TOML marshaling
+        - G304 # File path provided as taint input
+        - G703 # Path traversal via taint analysis
+        - G704 # SSRF via taint analysis
+        - G705 # XSS via taint analysis
+  exclusions:
+    paths:
+      - /?[^/]*_gen\.go$
+      - /?gen_[^/]*\.go$
+    rules:
+      - linters: [staticcheck]
+        text: "ST1001:" # Dot imports are discouraged
+
