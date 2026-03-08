@@ -113,7 +113,7 @@ func (c *Cli) Run() error {
 func lookup[T ast.Node](node *ast.MappingNode, key string) (T, error) {
 	var found ast.Node
 	for _, keyValue := range node.Values {
-		if key == keyValue.Key.String() {
+		if key == keyValue.Key.GetToken().Value {
 			found = keyValue.Value
 			break
 		}
