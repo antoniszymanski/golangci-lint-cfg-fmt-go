@@ -1,6 +1,6 @@
 # golangci-lint-cfg-fmt
 
-`golangci-lint-cfg-fmt` is a formatter for [golangci-lint](https://github.com/golangci/golangci-lint) YAML config files. Currently, it only sorts the `linters.disable` array.
+`golangci-lint-cfg-fmt` is a formatter for [golangci-lint](https://github.com/golangci/golangci-lint) YAML config files. Currently, it only sorts the `$.linters.disable` array.
 
 ### Installation:
 
