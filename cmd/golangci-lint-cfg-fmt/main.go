@@ -72,18 +72,32 @@ func (c *Cli) Run() error {
 	if !ok {
 		return fmt.Errorf("the 'disable' node is not a sequence node, but %T", disableNode)
 	}
-	slices.SortStableFunc(disable.Values, func(a, b ast.Node) int {
-		a_comment := a.GetComment() != nil
-		b_comment := b.GetComment() != nil
+
+	stringNodes := make([]*ast.StringNode, 0, len(disable.Values))
+	for i, value := range disable.Values {
+		stringNode, ok := value.(*ast.StringNode)
+		if !ok {
+			return fmt.Errorf("the node at index %d is not a string node, but %T", i, value)
+		}
+		stringNodes = append(stringNodes, stringNode)
+	}
+	slices.SortStableFunc(stringNodes, func(a, b *ast.StringNode) int {
+		aHasComment := a.Comment != nil
+		bHasComment := b.Comment != nil
 		switch {
-		case a_comment == b_comment:
-			return strings.Compare(a.String(), b.String())
-		case !a_comment && b_comment:
+		case aHasComment == bHasComment:
+			return strings.Compare(a.Value, b.Value)
+		case !aHasComment && bHasComment:
 			return -1
 		default:
 			return 1
 		}
 	})
+	disable.Values = disable.Values[:0]
+	for _, stringNode := range stringNodes {
+		disable.Values = append(disable.Values, stringNode)
+	}
+
 	out, err := root.MarshalYAML()
 	if err != nil {
 		return fmt.Errorf("failed to encode to a YAML text: %w", err)
