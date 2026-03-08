@@ -45,43 +45,35 @@ func (c *Cli) Run() error {
 		return fmt.Errorf("failed to read from the file: %w", err)
 	}
 	file, err := parser.ParseBytes(in, parser.ParseComments)
-	if err != nil {
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to parse file as YAML: %w", err)
-	}
-	if len(file.Docs) != 1 {
+	case len(file.Docs) != 1:
 		return fmt.Errorf("exactly one document was expected in the YAML file, but %d were found", len(file.Docs))
+	case file.Docs[0].Body == nil:
+		return errors.New("the root node is nil")
 	}
-	rootNode := file.Docs[0].Body
-	root, ok := rootNode.(*ast.MappingNode)
-	if !ok {
-		return fmt.Errorf("the root node is not a mapping node, but %T", rootNode)
+	root, err := as[*ast.MappingNode](file.Docs[0].Body)
+	if err != nil {
+		return err
 	}
-	lintersNode := get(root, "linters")
-	if lintersNode == nil {
-		return errors.New("key 'linters' not found in the root node")
+	linters, err := lookup[*ast.MappingNode](root, "linters")
+	if err != nil {
+		return err
 	}
-	linters, ok := lintersNode.(*ast.MappingNode)
-	if !ok {
-		return fmt.Errorf("the 'linters' node is not a mapping node, but %T", lintersNode)
+	disable, err := lookup[*ast.SequenceNode](linters, "disable")
+	if err != nil {
+		return err
 	}
-	disableNode := get(linters, "disable")
-	if disableNode == nil {
-		return errors.New("key 'disable' not found in the 'linters' node")
-	}
-	disable, ok := disableNode.(*ast.SequenceNode)
-	if !ok {
-		return fmt.Errorf("the 'disable' node is not a sequence node, but %T", disableNode)
-	}
-
-	stringNodes := make([]*ast.StringNode, 0, len(disable.Values))
-	for i, value := range disable.Values {
-		stringNode, ok := value.(*ast.StringNode)
-		if !ok {
-			return fmt.Errorf("the node at index %d is not a string node, but %T", i, value)
+	disableValues := make([]*ast.StringNode, 0, len(disable.Values))
+	for _, node := range disable.Values {
+		stringNode, err := as[*ast.StringNode](node)
+		if err != nil {
+			return err
 		}
-		stringNodes = append(stringNodes, stringNode)
+		disableValues = append(disableValues, stringNode)
 	}
-	slices.SortStableFunc(stringNodes, func(a, b *ast.StringNode) int {
+	slices.SortStableFunc(disableValues, func(a, b *ast.StringNode) int {
 		aHasComment := a.Comment != nil
 		bHasComment := b.Comment != nil
 		switch {
@@ -94,10 +86,9 @@ func (c *Cli) Run() error {
 		}
 	})
 	disable.Values = disable.Values[:0]
-	for _, stringNode := range stringNodes {
-		disable.Values = append(disable.Values, stringNode)
+	for _, value := range disableValues {
+		disable.Values = append(disable.Values, value)
 	}
-
 	out, err := root.MarshalYAML()
 	if err != nil {
 		return fmt.Errorf("failed to encode to a YAML text: %w", err)
@@ -119,13 +110,29 @@ func (c *Cli) Run() error {
 	return nil
 }
 
-func get(n *ast.MappingNode, key string) ast.Node {
-	var value ast.Node
-	for _, keyvalue := range n.Values {
-		if key == keyvalue.Key.String() {
-			value = keyvalue.Value
+func lookup[T ast.Node](node *ast.MappingNode, key string) (T, error) {
+	var found ast.Node
+	for _, keyValue := range node.Values {
+		if key == keyValue.Key.String() {
+			found = keyValue.Value
 			break
 		}
 	}
-	return value
+	if found == nil {
+		return zero[T](), fmt.Errorf("the mapping node at %q does not have the key %q", node.GetPath(), key)
+	}
+	return as[T](found)
+}
+
+func as[T ast.Node](node ast.Node) (T, error) {
+	out, ok := node.(T)
+	if !ok {
+		return zero[T](), fmt.Errorf("the node at %q is %s, not %s", node.GetPath(), node.Type(), out.Type())
+	}
+	return out, nil
+}
+
+func zero[T any]() T {
+	var zero T
+	return zero
 }
