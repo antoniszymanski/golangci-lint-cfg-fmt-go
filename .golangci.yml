@@ -20,6 +20,7 @@ linters:
     - goconst
     - gocyclo
     - godot
+    - gomodguard
     - gosmopolitan
     - ireturn
     - lll
@@ -66,4 +67,3 @@ linters:
     rules:
       - linters: [staticcheck]
         text: "ST1001:" # Dot imports are discouraged
-
